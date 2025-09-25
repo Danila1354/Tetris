@@ -205,6 +205,9 @@ class Renderer {
     restoreCtx(){
         this.#ctx.restore();
     }
+    get ctx() {
+        return this.#ctx;
+    }
 }
 
 
@@ -329,10 +332,14 @@ class GameField {
                 fullLines.push(y);
             }
         }
-        for (let line of fullLines) {
+        return fullLines;
+    }
+
+    removeFullLines(lines) {
+        lines.sort((a, b) => a - b);
+        for (let line of lines) {
             this.clearLine(line);
         }
-        return fullLines.length;
     }
 
     clearLine(line) {
@@ -386,6 +393,9 @@ class GameField {
 
     get yWithoutTwoRows() {
         return this.#yWithoutTwoRows;
+    }
+    getCellColor(x, y) {
+        return "#ff0000"
     }
 }
 
@@ -640,6 +650,8 @@ class Game {
         this.#lastDropTime += delta;
         this.#ghostTetromino.copyFrom(this.#currentTetromino);
         this.hardDrop(true);
+        this.explodingBlocks.forEach(b => b.update(delta));
+        this.explodingBlocks = this.explodingBlocks.filter(b => !b.isDone());
 
         const canFall = this.#field.checkNextPosition(this.#currentTetromino, 0, 1);
 
@@ -725,19 +737,19 @@ class Game {
     }
 
     lockCurrentTetromino() {
+        this.#field.fixTetromino(this.#currentTetromino);
         const fullLines = this.#field.checkFullLines();
         if (fullLines.length) {
             fullLines.forEach(y => {
                 for (let x = 0; x < this.#field.cols; x++) {
-                    const color = this.#field.getCellColor(x, y);
-                    const px = x * this.blockSize;
-                    const py = y * this.blockSize;
-                    this.explodingBlocks.push(new ExplodingBlock(px, py, color, this.blockSize));
+                    const cell = this.#field.getCellByIndex(x, y);
+                    if (cell.isOccupied) {
+                        this.explodingBlocks.push(new ExplodingBlock(cell, "#ff0000"));
+                    }
                 }
             });
-            this.#field.removeFullLines(fullLines); // очищаем линии в поле
+            this.#field.removeFullLines(fullLines);
         }
-
         this.#currentTetromino = new Tetromino(this.#tetrominoBag.getNext());
         this.setCenterCoords();
     }
@@ -753,6 +765,7 @@ class Game {
         }
         this.#renderer.drawTetromino(this.#currentTetromino);
         this.#renderer.restoreCtx();
+        this.explodingBlocks.forEach(b => b.draw(this.#renderer.ctx));
     }
 
     tryRotate(direction = 1) {
@@ -880,17 +893,17 @@ function triggerShakeY() {
 }
 
 
-
 class ExplodingBlock {
-    constructor(x, y, color, size) {
-        this.x = x; // пиксели
-        this.y = y;
+    constructor(cell, color = "#ff0000") {
+        this.x = cell.x;
+        this.y = cell.y;
+        this.size = cell.size;
         this.color = color;
-        this.size = size || 20;
-        this.vx = (Math.random() - 0.5) * 6; // скорость по x
-        this.vy = -Math.random() * 5 - 2;    // скорость вверх
-        this.alpha = 1;
+
+        this.vx = (Math.random() - 0.5) * 6;
+        this.vy = -Math.random() * 5 - 2;
         this.gravity = 0.3;
+        this.alpha = 1;
         this.rotation = Math.random() * Math.PI * 2;
         this.rotationSpeed = (Math.random() - 0.5) * 0.2;
     }
@@ -900,17 +913,19 @@ class ExplodingBlock {
         this.x += this.vx;
         this.y += this.vy;
         this.rotation += this.rotationSpeed;
-        this.alpha -= 0.02; // постепенно исчезает
+        this.alpha -= 0.02;
         if (this.alpha < 0) this.alpha = 0;
     }
 
     draw(ctx) {
         ctx.save();
         ctx.globalAlpha = this.alpha;
-        ctx.translate(this.x + this.size/2, this.y + this.size/2);
+        ctx.translate(this.x + this.size / 2, this.y + this.size / 2);
         ctx.rotate(this.rotation);
+
         ctx.fillStyle = this.color;
-        ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+        ctx.fillRect(-this.size / 2, -this.size / 2, this.size, this.size);
+
         ctx.restore();
     }
 
