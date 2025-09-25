@@ -1,0 +1,73 @@
+*{
+    box-sizing: border-box;
+    margin: 0; /* убираем дефолтные отступы */
+    padding: 0;
+}
+html, body {
+    overflow: hidden;
+}
+
+.container{
+    width: 100%;
+    margin: auto;
+    justify-content: center;
+    align-items: center;
+    max-width: 1100px;
+
+}
+body {
+    height: 100vh;
+    background: #1e1e2f;
+    font-family: Arial, sans-serif;
+}
+
+.form-container {
+    background: #2c2c44;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    text-align: center;
+}
+
+.form-container h2 {
+    color: #fff;
+    margin-bottom: 20px;
+}
+
+.username-input {
+    width: 240px;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    outline: none;
+    font-size: 16px;
+}
+
+.btn{
+    width: 240px;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #4cafef;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn:hover {
+    background: #3aa0db;
+}
+
+@keyframes shakeY {
+    0%   { transform: translateY(0); }
+    25%  { transform: translateY(7px); }
+    50%  { transform: translateY(0); }
+    75%  { transform: translateY(-3px); }
+    100% { transform: translateY(0); }
+}
+
+canvas.shake-y {
+    animation: shakeY 150ms ease;
+}
