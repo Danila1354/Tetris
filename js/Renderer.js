@@ -44,8 +44,6 @@ export default class Renderer {
                 }
             }
         }
-
-        // Потом уже занятые клетки (с градиентом)
         for (let y = 0; y < field.rows; y++) {
             for (let x = 0; x < field.cols; x++) {
                 if (y < 2) continue;
@@ -116,19 +114,13 @@ export default class Renderer {
         this.#ctx.stroke();
     }
 
-    drawTetromino(tetromino,field) {
-        const tetrominoCoords = tetromino.coords;
-        const colors = tetromino.colors;
-
-        for (let [x, y] of tetrominoCoords) {
-            const [worldX, worldY] = field.getRealCoors(x, y);
-            const cell = field.getCellByCoords(worldX, worldY);
-
-            this.#ctx.clearRect(worldX, worldY, cell.size, cell.size);
+    drawTetromino(cells, colors) {
+        for (let cell of cells) {
+            this.#ctx.clearRect(cell.x, cell.y, cell.size, cell.size);
             this.#ctx.fillStyle = this.createGradient(cell, colors[0], colors[1]);
             this.#ctx.lineWidth = 2;
             this.#ctx.strokeStyle = Renderer.COLORS.tetrominoBorder;
-            this.#ctx.fillRect(worldX, worldY, cell.size, cell.size);
+            this.#ctx.fillRect(cell.x, cell.y, cell.size, cell.size);
             this.drawTetrominoBorder(cell);
         }
     }
@@ -144,7 +136,7 @@ export default class Renderer {
 
     drawNextTetrominoWindow(field, nextTetrominoShape) {
         const boxSize = field.cellSize * 5;
-        const boxX = field.startX + field.width + 40;
+        const boxX = field.startX + field.width + 20;
         const boxY = field.startY + 2*field.cellSize;
 
         this.#ctx.fillStyle = Renderer.COLORS.glassFill;
@@ -192,6 +184,26 @@ export default class Renderer {
     }
 
     restoreCtx() {
+        this.#ctx.restore();
+    }
+
+    renderInfoPanel(level, score, timeStr, lines, offsetX, offsetY) {
+        const panelWidth = 180;
+        const panelHeight = 140;
+        this.#ctx.save();
+        this.#ctx.fillStyle = Renderer.COLORS.glassFill;
+        this.#ctx.strokeStyle = Renderer.COLORS.glassStroke;
+        this.#ctx.lineWidth = 2;
+        this.#ctx.fillRect(offsetX, offsetY, panelWidth, panelHeight);
+        this.#ctx.strokeRect(offsetX, offsetY, panelWidth, panelHeight);
+
+        this.#ctx.font = "22px Arial";
+        this.#ctx.fillStyle = "white";
+        this.#ctx.textAlign = "left";
+        this.#ctx.fillText("Уровень: " + level, offsetX + 16, offsetY + 32);
+        this.#ctx.fillText("Очки: " + score, offsetX + 16, offsetY + 60);
+        this.#ctx.fillText("Линии: " + lines, offsetX + 16, offsetY + 88);
+        this.#ctx.fillText("⏱ " + timeStr, offsetX + 16, offsetY + 116);
         this.#ctx.restore();
     }
 }

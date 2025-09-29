@@ -1,6 +1,7 @@
 import Renderer from "./js/Renderer.js";
 import GameField from "./js/GameField.js";
 import Game from "./js/Game.js";
+import Player from "./js/Player.js";
 function initCanvas() {
     const canvas = document.getElementById("canvas");
     const scale = window.devicePixelRatio || 1;
@@ -50,5 +51,6 @@ function initCanvas() {
 const ctx = initCanvas();
 const r = new Renderer(ctx)
 const field = new GameField(10, 22, 30)
-let g = new Game(field, r)
+const player = new Player('Player1')
+let g = new Game(field, r, player)
 g.start();

@@ -194,12 +194,20 @@ export default class GameField {
     get yWithoutTwoRows() {
         return this.#yWithoutTwoRows;
     }
-
     getCellColor(x, y) {
         const cell = this.getCellByIndex(x, y);
         if (cell.isOccupied && cell.style && cell.style.type === 'gradient') {
             return cell.style.colors[0];
         }
+    }
 
+    getTetrominoCells(tetromino) {
+        const result = [];
+        for (let [x, y] of tetromino.coords) {
+            const [worldX, worldY] = this.getRealCoors(x, y);
+            const cell = this.getCellByCoords(worldX, worldY);
+            result.push(cell);
+        }
+        return result;
     }
 }
