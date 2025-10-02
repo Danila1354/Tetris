@@ -72,28 +72,6 @@ export default class GameField {
         return this.checkCoords(newCoords);
     }
 
-    checkEndOfGlass(tetromino) {
-        for (let [x, y] of tetromino.coords) {
-            if (y >= this.#rows) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    checkCollision(tetromino) {
-        const tetrominoCoords = tetromino.coords;
-        for (let [x, y] of tetrominoCoords) {
-            if (y < 0 || y >= this.#rows || x < 0 || x >= this.#cols) {
-                continue;
-            }
-            const cell = this.getCellByIndex(x, y);
-            if (cell.isOccupied) {
-                return true;
-            }
-        }
-        return false;
-    }
     checkGameOver() {
         for (let x = 0; x < this.#cols; x++) {
             for (let y = 1; y >= 0; y--) {

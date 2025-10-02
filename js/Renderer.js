@@ -2,30 +2,79 @@ import Tetromino from "./Tetromino.js";
 import Cell from "./Cell.js";
 export default class Renderer {
     #ctx;
-
-    static COLORS = {
-        glassFill: "#222831",
-        glassStroke: "#fff",
-        gridStroke: "rgba(255, 255, 255, 0.05)",
-        tetrominoBorder: "#444"
-    };
-
-
+    #colors;
+    #layout = {};
+    #fonts = {};
     constructor(ctx) {
         this.#ctx = ctx;
+        this.#colors = {
+            glassFill: "rgba(20, 20, 40, 0.9)",
+            glassStroke: "rgba(138, 43, 226, 0.8)",
+            gridStroke: "#1a1a2e",
+            tetrominoBorder: "#1a1a2e",
+            gradientStart: "#1b1b33",
+            gradientEnd: "#2a2a48",
+            glow: "rgba(138, 43, 226, 0.7)",
+        };
+        this.#fonts = {
+            infoPanel: "22px Comic Sans MS",
+            controls: "14px Comic Sans MS",
+            scoresTableTitle: "22px Comic Sans MS",
+            scoresTableRows: "17px Comic Sans MS"
+        };
+    }
+    initLayout(field) {
+        this.#layout.infoPanel = {
+            x: field.startX - 200,
+            y: field.startY + 60
+        };
+        this.#layout.scoresTable = {
+            x: 30,
+            y: this.#layout.infoPanel.y,
+        };
+
+        this.#layout.controls = {
+            x: field.startX + field.width + 20,
+            y: field.startY + field.cellSize * 7.5
+        };
+
+        this.#layout.nextBox = {
+            x: field.startX + field.width + 20,
+            y: field.startY + 2 * field.cellSize,
+            size: field.cellSize * 5
+        };
     }
 
     drawGlass(field) {
-        this.#ctx.fillStyle = Renderer.COLORS.glassFill;
-        this.#ctx.fillRect(field.startX - 2, field.yWithoutTwoRows, field.width + 2, field.height - 2 * field.cellSize);
-        this.#ctx.strokeStyle = Renderer.COLORS.glassStroke;
+        const gradient = this.#ctx.createLinearGradient(
+            field.startX, field.yWithoutTwoRows,
+            field.startX, field.startY + field.height
+        );
+        gradient.addColorStop(0, this.#colors.gradientStart);
+        gradient.addColorStop(1, this.#colors.gradientEnd);
+
+        this.#ctx.fillStyle = gradient;
+        this.#ctx.fillRect(
+            field.startX - 2,
+            field.yWithoutTwoRows,
+            field.width + 2,
+            field.height - 2 * field.cellSize
+        );
+
+        this.#ctx.strokeStyle = this.#colors.glassStroke;
         this.#ctx.lineWidth = 2;
+        this.#ctx.shadowColor = this.#colors.glow;
+        this.#ctx.shadowBlur = 10;
+
         this.#ctx.beginPath();
         this.#ctx.moveTo(field.startX - this.#ctx.lineWidth, field.yWithoutTwoRows);
         this.#ctx.lineTo(field.startX - this.#ctx.lineWidth, field.startY + this.#ctx.lineWidth + field.height);
         this.#ctx.lineTo(field.startX + this.#ctx.lineWidth + field.width, field.startY + this.#ctx.lineWidth + field.height);
         this.#ctx.lineTo(field.startX + this.#ctx.lineWidth + field.width, field.yWithoutTwoRows);
-        this.#ctx.stroke()
+        this.#ctx.closePath();
+        this.#ctx.stroke();
+
+        this.#ctx.shadowBlur = 0;
     }
 
     drawGrid(field) {
@@ -36,8 +85,8 @@ export default class Renderer {
                 if (!cell.isOccupied) {
                     cell.style = {
                         type: "commonColor",
-                        color: Renderer.COLORS.gridStroke,
-                        fill: Renderer.COLORS.glassFill,
+                        color: this.#colors.gridStroke,
+                        fill: this.#colors.glassFill,
                         lineWidth: 2
                     };
                     this.drawCell(cell);
@@ -55,13 +104,12 @@ export default class Renderer {
         }
         this.#ctx.beginPath();
         this.#ctx.lineWidth = 2;
-        this.#ctx.strokeStyle = Renderer.COLORS.gridStroke;
+        this.#ctx.strokeStyle = this.#colors.gridStroke;
         this.#ctx.moveTo(field.startX, field.yWithoutTwoRows);
         this.#ctx.lineTo(field.startX, field.startY + field.height);
         this.#ctx.lineTo(field.startX + field.width, field.startY + field.height);
         this.#ctx.lineTo(field.startX + field.width, field.yWithoutTwoRows);
         this.#ctx.stroke()
-
     }
 
     drawCellWithoutGradient(cell, color, lineWidth = 2, fill = null) {
@@ -95,12 +143,19 @@ export default class Renderer {
 
     drawCellGradient(cell, colors, lineWidth = 2) {
         this.#ctx.clearRect(cell.x, cell.y, cell.size, cell.size);
+
         this.#ctx.fillStyle = this.createGradient(cell, colors[0], colors[1]);
         this.#ctx.fillRect(cell.x, cell.y, cell.size, cell.size);
 
-        this.#ctx.strokeStyle = Renderer.COLORS.tetrominoBorder;
+        this.#ctx.save();
+        this.#ctx.shadowColor = colors[0];
+        this.#ctx.shadowBlur = 5;
+
+        this.#ctx.strokeStyle = this.#colors.tetrominoBorder;
         this.#ctx.lineWidth = lineWidth;
         this.#ctx.strokeRect(cell.x, cell.y, cell.size, cell.size);
+
+        this.#ctx.restore();
     }
 
 
@@ -117,33 +172,53 @@ export default class Renderer {
     drawTetromino(cells, colors) {
         for (let cell of cells) {
             this.#ctx.clearRect(cell.x, cell.y, cell.size, cell.size);
+
             this.#ctx.fillStyle = this.createGradient(cell, colors[0], colors[1]);
-            this.#ctx.lineWidth = 2;
-            this.#ctx.strokeStyle = Renderer.COLORS.tetrominoBorder;
             this.#ctx.fillRect(cell.x, cell.y, cell.size, cell.size);
+            this.#ctx.save();
+            this.#ctx.shadowColor = colors[1];
+            this.#ctx.shadowBlur = 30;
+
+            this.#ctx.strokeStyle = this.#colors.tetrominoBorder;
+            this.#ctx.lineWidth = 2;
             this.drawTetrominoBorder(cell);
+
+            this.#ctx.restore();
         }
     }
 
     drawExplodingBlock(block) {
-        this.saveCtxAndMakeAlpha(block.alpha)
+        this.saveCtxAndMakeAlpha(block.alpha);
+
         this.#ctx.translate(block.x + block.size / 2, block.y + block.size / 2);
         this.#ctx.rotate(block.rotation);
+        this.#ctx.save();
+        this.#ctx.shadowColor = block.color;
+        this.#ctx.shadowBlur = 10;
+
         this.#ctx.fillStyle = block.color;
         this.#ctx.fillRect(-block.size / 2, -block.size / 2, block.size, block.size);
+
+        this.#ctx.restore();
         this.#ctx.restore();
     }
 
-    drawNextTetrominoWindow(field, nextTetrominoShape) {
-        const boxSize = field.cellSize * 5;
-        const boxX = field.startX + field.width + 20;
-        const boxY = field.startY + 2*field.cellSize;
+    drawNextTetrominoWindow(nextTetrominoShape) {
+        const box = this.#layout.nextBox; // берём готовый layout
+        const boxSize = box.size;
+        const boxX = box.x;
+        const boxY = box.y;
 
-        this.#ctx.fillStyle = Renderer.COLORS.glassFill;
-        this.#ctx.strokeStyle = Renderer.COLORS.glassStroke;
+        const gradient = this.#ctx.createLinearGradient(boxX, boxY, boxX, boxY + boxSize);
+        gradient.addColorStop(0, "#1b1b33");
+        gradient.addColorStop(1, "#2a2a48");
+
+        this.#ctx.fillStyle = gradient;
+        this.#ctx.strokeStyle = this.#colors.glassStroke;
         this.#ctx.lineWidth = 2;
         this.#ctx.fillRect(boxX, boxY, boxSize, boxSize);
         this.#ctx.strokeRect(boxX, boxY, boxSize, boxSize);
+
         const shape = Tetromino.SHAPES[nextTetrominoShape];
         const colors = Tetromino.COLORS[nextTetrominoShape];
 
@@ -151,21 +226,20 @@ export default class Renderer {
         const minY = Math.min(...shape.map(([, y]) => y));
         const maxX = Math.max(...shape.map(([x]) => x));
         const maxY = Math.max(...shape.map(([, y]) => y));
-        const offsetX = boxX + (boxSize - (maxX - minX + 1) * field.cellSize) / 2;
-        const offsetY = boxY + (boxSize - (maxY - minY + 1) * field.cellSize) / 2;
+
+        const offsetX = boxX + (boxSize - (maxX - minX + 1) * (boxSize / 5)) / 2;
+        const offsetY = boxY + (boxSize - (maxY - minY + 1) * (boxSize / 5)) / 2;
 
         for (let [x, y] of shape) {
-            const worldX = offsetX + (x - minX) * field.cellSize;
-            const worldY = offsetY + (y - minY) * field.cellSize;
+            const worldX = offsetX + (x - minX) * (boxSize / 5);
+            const worldY = offsetY + (y - minY) * (boxSize / 5);
 
-            const cell = new Cell(worldX, worldY, field.cellSize);
+            const cell = new Cell(worldX, worldY, boxSize / 5);
             cell.style = { type: "gradient", colors, lineWidth: 2 };
 
             this.drawCell(cell);
         }
     }
-
-
 
     clear() {
         this.#ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
@@ -187,23 +261,108 @@ export default class Renderer {
         this.#ctx.restore();
     }
 
-    renderInfoPanel(level, score, timeStr, lines, offsetX, offsetY) {
+    renderInfoPanel(username, level, score, lines) {
+        const { x, y } = this.#layout.infoPanel;
         const panelWidth = 180;
         const panelHeight = 140;
-        this.#ctx.save();
-        this.#ctx.fillStyle = Renderer.COLORS.glassFill;
-        this.#ctx.strokeStyle = Renderer.COLORS.glassStroke;
-        this.#ctx.lineWidth = 2;
-        this.#ctx.fillRect(offsetX, offsetY, panelWidth, panelHeight);
-        this.#ctx.strokeRect(offsetX, offsetY, panelWidth, panelHeight);
 
-        this.#ctx.font = "22px Arial";
+        this.#ctx.save();
+
+        const gradient = this.#ctx.createLinearGradient(x, y, x, y + panelHeight);
+        gradient.addColorStop(0, this.#colors.gradientStart);
+        gradient.addColorStop(1, this.#colors.gradientEnd);
+
+        this.#ctx.fillStyle = gradient;
+        this.#ctx.strokeStyle = this.#colors.glassStroke;
+        this.#ctx.lineWidth = 2;
+        this.#ctx.fillRect(x, y, panelWidth, panelHeight);
+        this.#ctx.strokeRect(x, y, panelWidth, panelHeight);
+
+        this.#ctx.font = this.#fonts.infoPanel;
         this.#ctx.fillStyle = "white";
         this.#ctx.textAlign = "left";
-        this.#ctx.fillText("Уровень: " + level, offsetX + 16, offsetY + 32);
-        this.#ctx.fillText("Очки: " + score, offsetX + 16, offsetY + 60);
-        this.#ctx.fillText("Линии: " + lines, offsetX + 16, offsetY + 88);
-        this.#ctx.fillText("⏱ " + timeStr, offsetX + 16, offsetY + 116);
+
+        const linesText = [
+            `Player: ${username}`,
+            `Level: ${level}`,
+            `Score: ${score}`,
+            `Lines: ${lines}`,
+        ];
+
+        const paddingTop = 25;
+        const paddingBottom = 20;
+        const availableHeight = panelHeight - paddingTop - paddingBottom;
+        const step = availableHeight / (linesText.length - 1);
+
+        linesText.forEach((text, i) => {
+            const yPos = y + paddingTop + i * step;
+            this.#ctx.fillText(text, x + 16, yPos);
+        });
+
         this.#ctx.restore();
     }
+
+    renderControlsInfo() {
+        const { x, y } = this.#layout.controls;
+        const controls = [
+            "⬅ — Left move",
+            "➡ — Right move",
+            "⬇ — Slow drop",
+            "⬆ — Rotate clockwise",
+            "z — Rotate counterclockwise",
+            "␣ — Hard drop",
+        ];
+
+        this.#ctx.save();
+        this.#ctx.font = this.#fonts.controls;
+        this.#ctx.fillStyle = "white";
+        this.#ctx.textAlign = "left";
+        controls.forEach((text, i) => {
+            this.#ctx.fillText(text, x, y + 24 + i * 22);
+        });
+        this.#ctx.restore();
+    }
+
+    renderTopScoresTable(topScores) {
+        const { x: offsetX, y: offsetY } = this.#layout.scoresTable;
+
+        const rowHeight = 30;
+        const tableWidth = 290;
+
+        this.#ctx.save();
+
+        this.#ctx.fillStyle = "#ffffff";
+
+        this.#ctx.font = this.#fonts.scoresTableTitle;
+        this.#ctx.textAlign = "center";
+        this.#ctx.fillText("🏆 Score table", offsetX + tableWidth / 2, offsetY + 15);
+
+        this.#ctx.font = this.#fonts.scoresTableRows;
+        for (let i = 0; i < Math.min(topScores.length, 15); i++) {
+            const entry = topScores[i];
+            const name = entry.name;
+            const score = entry.score;
+
+            const yPos = offsetY+15 + rowHeight * (i + 1);
+
+            this.#ctx.textAlign = "left";
+            this.#ctx.fillText(`${i + 1}. ${name}`, offsetX, yPos);
+
+            this.#ctx.textAlign = "right";
+            this.#ctx.fillText(score, offsetX + tableWidth, yPos);
+        }
+
+        this.#ctx.restore();
+    }
+
+    renderGameOver(player){
+        const overlay = document.getElementById("gameOverOverlay");
+        const finalScore = document.getElementById("finalScore");
+        const finalLines = document.getElementById("finalLines");
+
+        finalScore.textContent = `Score: ${player.score}`;
+        finalLines.textContent = `Lines: ${player.lines}`;
+        overlay.classList.remove("hidden");
+    }
+
 }

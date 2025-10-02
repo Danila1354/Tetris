@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <title>Game Login</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="css/login.css">
 </head>
 <body>
-<div class="container">
-    <div class="form-container">
-        <h2>Enter Username</h2>
-        <form action="main.html" method="GET">
-            <input type="text" name="username" placeholder="Username" class="username-input" required>
-            <br>
-            <button class="btn play-btn">Play</button>
-        </form>
-    </div>
+<div class="form-container">
+    <h2>Enter Username</h2>
+    <form id="login-form" action="main.html" method="GET">
+        <input type="text" name="username" id="username-input" placeholder="Username" class="username-input" required>
+        <br>
+        <button class="btn play-btn">Play</button>
+    </form>
 </div>
+
+<script src="js/loginForm.js"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@ export default class ExplodingBlock {
         this.size = Math.round(cell.size / 2);
         this.color = color;
 
-        // скорости в px/s (подбирай)
+        // скорости в px/s
         this.vx = (Math.random() - 0.5) * 300;         // от -150 до +150 px/s
         this.vy = -(Math.random() * 200 + 150);       // от -150 до -350 px/s (вверх)
 
@@ -20,18 +20,14 @@ export default class ExplodingBlock {
     }
 
     update(delta) {
-        // delta приходит в миллисекундах — переводим в секунды
-        const dt = Math.min(delta / 1000, 0.05); // капаем dt, чтобы избежать больших скачков (табы/заморозки)
+        const dt = Math.min(delta / 1000, 0.05); // ограничение dt до 50 мс
 
-        // физика
         this.vy += this.gravity * dt;
         this.x += this.vx * dt;
         this.y += this.vy * dt;
 
-        // вращение
         this.rotation += this.rotationSpeed * dt;
 
-        // уменьшение прозрачности
         this.alpha -= this.alphaDecay * dt;
         if (this.alpha < 0) this.alpha = 0;
     }

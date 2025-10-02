@@ -8,6 +8,36 @@
 <body>
     <canvas id="canvas">
     </canvas>
+    <div id="gameOverOverlay" class="overlay hidden">
+        <div class="game-over-box">
+            <h2>Game Over!</h2>
+            <p id="finalScore"></p>
+            <p id="finalLines"></p>
+            <div class="game-over-buttons">
+                <button id="restartBtn" class="btn restart-btn">Restart</button>
+                <a class="btn back-btn" href="index.html">Back to menu</a>
+            </div>
+            <a id="openTableLink" href="#" class="modal-link">View score table</a>
+        </div>
+    </div>
+    <div id="tableOverlay" class="overlay hidden">
+        <div class="table-box">
+            <h2>Score table</h2>
+            <table class="score-table">
+                <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Player</th>
+                    <th>Score</th>
+                </tr>
+                </thead>
+                <tbody id="scoreTableBody"></tbody>
+            </table>
+            <button id="closeTableBtn" class="btn">Close</button>
+        </div>
+    </div>
     <script type="module" src="./index.js"></script>
+    <script type="module" src="./js/show_table.js"></script>
+
 </body>
 </html>

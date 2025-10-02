@@ -1,63 +1,18 @@
-*{
+* {
     box-sizing: border-box;
-    margin: 0; /* убираем дефолтные отступы */
+    margin: 0;
     padding: 0;
 }
+
 html, body {
     overflow: hidden;
 }
 
-.container{
-    width: 100%;
-    margin: auto;
-    justify-content: center;
-    align-items: center;
-    max-width: 1100px;
-
-}
 body {
     height: 100vh;
     background: #1e1e2f;
     font-family: Arial, sans-serif;
-}
-
-.form-container {
-    background: #2c2c44;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    text-align: center;
-}
-
-.form-container h2 {
-    color: #fff;
-    margin-bottom: 20px;
-}
-
-.username-input {
-    width: 240px;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    margin-bottom: 15px;
-    outline: none;
-    font-size: 16px;
-}
-
-.btn{
-    width: 240px;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    background: #4cafef;
-    color: white;
-    font-size: 16px;
-    cursor: pointer;
-    transition: 0.2s;
-}
-
-.btn:hover {
-    background: #3aa0db;
+    background: linear-gradient(160deg, #1e1e2f 0%, #2a2a48 50%, #1b1b33 100%);
 }
 
 @keyframes shakeY {
@@ -71,3 +26,155 @@ body {
 canvas.shake-y {
     animation: shakeY 150ms ease;
 }
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(30, 30, 47, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Game Over Box */
+.game-over-box {
+    background: linear-gradient(145deg, #3a3a6a, #2a2a48);
+    color: #fff;
+    padding: 40px 60px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(50, 50, 100, 0.8);
+    min-width: 420px;
+    animation: popIn 0.3s ease-out;
+    border: 2px solid rgba(255, 75, 110, 0.3);
+}
+
+.game-over-box h2 {
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+    color: #ff4b6e;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 0 12px rgba(255, 75, 110, 0.6);
+}
+
+.game-over-box p {
+    font-size: 1.2rem;
+    margin: 10px 0;
+    color: #ddd;
+}
+
+/* Buttons */
+.btn {
+    margin-top: 25px;
+    padding: 14px 32px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(90deg, #6a5acd, #8a2be2);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(138, 43, 226, 0.7);
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Modal link */
+.modal-link {
+    display: block;
+    text-decoration: none;
+    margin-top: 15px;
+    font-size: 1rem;
+    color: #9a7dff;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.modal-link:hover {
+    color: #c3a9ff;
+}
+
+/* High Scores Table Box */
+.table-box {
+    background: linear-gradient(145deg, #3a3a6a, #2a2a48);
+    color: #fff;
+    padding: 30px 40px;
+    border-radius: 16px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(50, 50, 100, 0.8);
+    min-width: 500px;
+    max-height: 70vh; /* ограничиваем высоту для прокрутки */
+    overflow-y: auto; /* добавляем вертикальную прокрутку */
+    animation: popIn 0.3s ease-out;
+    border: 2px solid rgba(75, 180, 255, 0.3);
+}
+
+.table-box h2 {
+    font-size: 2rem;
+    margin-bottom: 20px;
+    color: #4bb0ff;
+    text-shadow: 0 0 12px rgba(75, 180, 255, 0.6);
+}
+
+/* Таблица рекордов */
+.score-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.score-table th, .score-table td {
+    border: 1px solid rgba(200, 200, 255, 0.2);
+    padding: 10px 15px;
+    text-align: center;
+}
+
+.score-table th {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+    font-weight: bold;
+}
+
+.score-table tr:nth-child(even) {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.game-over-buttons {
+    display: flex;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.back-btn{
+    margin-top: 5px;
+}
+
+.back-btn{
+    text-decoration: none;
+
+}
+

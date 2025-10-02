@@ -2,65 +2,67 @@ import Tetromino from "./Tetromino.js";
 import InputHandler from "./InputHandler.js";
 import TetrominoBag from "./TetrominoBag.js";
 import ExplodingBlock from "./ExplodingBlock.js";
-
+import ScoreStorage from "./ScoreStorage.js";
 
 export default class Game {
     #field;
     #renderer;
     #currentTetromino;
     #input;
-    #lastDropTime;
+    #scoreStorage;
+    #isRunning;
+    #lockDelayWithoutActions;
 
-    #dropInterval;
     #ghostTetromino;
     #tetrominoBag;
     #player;
 
-    #startDropInterval = 800;
-    #endDropInterval = 80;
-    #startDelayWithoutActions = 800;
-    #endDelayWithoutActions = 200;
+    #dropInterval = 800;
+    #lastDropTime = 0;
+    #startDelayWithoutActions = 500;
+    #endDelayWithoutActions = 300;
     #lastTime = null;
 
     #isLocking = false;
     #lockTimer = 0;
-    #lockDelayWithoutActions = 1000;
+
 
     #lastDropY = null;
-    #maxLockDrops = 20;
+    #maxLockDrops = 15;
     #lockDrops = 0;
     #pulseTime = 0;
 
     #explodingBlocks = [];
 
     #startTime = null;   // когда началась игра
-    #elapsed = 0;
+    #elapsed = 0;      // сколько прошло с начала игры
 
     constructor(field, renderer, player) {
         this.#field = field;
         this.#renderer = renderer;
+        this.#renderer.initLayout(field)
         this.#player = player;
         this.#currentTetromino = null;
         this.#ghostTetromino = null;
         this.#tetrominoBag = new TetrominoBag();
         this.#input = new InputHandler();
-        this.#lastDropTime = 0;
-        this.#dropInterval = this.#startDropInterval;
+        this.#scoreStorage = new ScoreStorage();
+        this.#lockDelayWithoutActions = this.#startDelayWithoutActions;
     }
 
     start() {
         this.#currentTetromino = new Tetromino(this.#tetrominoBag.getNext());
         this.setCenterCoords();
-
-
         this.#lastTime = performance.now();
         this.#startTime = this.#lastTime;
-        this.isRunning = true;
+        this.#isRunning = true;
+
         this.animationId = requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
     }
 
     gameLoop(timestamp) {
-        if (!this.isRunning) return;
+        if (!this.#isRunning) return;
+
         const delta = timestamp - this.#lastTime;
         this.#lastTime = timestamp;
         this.#elapsed = timestamp - this.#startTime;
@@ -81,13 +83,14 @@ export default class Game {
                 }
                 return moved;
             },
-            rotate: () => this.tryRotate(),
+            rotateCW: () => this.tryRotate(1),
+            rotateCCW: () => this.tryRotate(-1),
             drop: () => this.hardDrop()
         };
 
         if (actions[action]) {
             actions[action]();
-            return true
+            return true;
         }
         return false;
     }
@@ -99,20 +102,20 @@ export default class Game {
             ["ArrowLeft", "left"],
             ["ArrowRight", "right"],
             ["ArrowDown", "down"],
-            ["ArrowUp", "rotate"],
-            ["Space", "drop"]
+            ["ArrowUp", "rotateCW"],
+            ["KeyZ", "rotateCCW"],
+            ["Space", "drop"],
         ];
+
         for (const [key, action] of inputs) {
             if (this.#input.shouldTrigger(key, now)) {
-                const actionDo = this.performAction(action);
-                if (this.#isLocking && actionDo) {
+                const actionDone = this.performAction(action);
+                if (this.#isLocking && actionDone) {
                     this.#lockDrops += 1;
                     this.#lockTimer = 0;
                 }
-
             }
         }
-
         this.#lastDropTime += delta;
         this.#ghostTetromino.copyFrom(this.#currentTetromino);
         this.hardDrop(true);
@@ -208,20 +211,18 @@ export default class Game {
     }
 
     stopGame() {
-        this.isRunning = false;
+        this.#isRunning = false;
         if (this.animationId) {
             cancelAnimationFrame(this.animationId);
             this.animationId = null;
         }
+        this.#scoreStorage.saveScore(this.#player.name, this.#player.score);
+        this.#renderer.renderGameOver(this.#player);
     }
 
     lockCurrentTetromino() {
         this.#field.fixTetromino(this.#currentTetromino);
-        if (this.#field.checkGameOver()) {
-            this.stopGame();
-            return;
-        }
-        triggerShakeY();
+
         const fullLines = this.#field.checkFullLines();
         if (fullLines.length) {
             fullLines.forEach(y => {
@@ -235,6 +236,11 @@ export default class Game {
             this.#field.removeFullLines(fullLines);
             this.updatePlayerScore(fullLines.length);
         }
+        if (this.#field.checkGameOver()) {
+            this.stopGame();
+            return;
+        }
+        triggerShakeY();
         this.#currentTetromino = new Tetromino(this.#tetrominoBag.getNext());
         this.setCenterCoords();
     }
@@ -249,24 +255,11 @@ export default class Game {
         }
     }
 
-    getFormattedTime() {
-        const time = this.#elapsed;
-        const minutes = Math.floor(time / 60000);
-        const seconds = Math.floor((time % 60000) / 1000);
-        const millis = Math.floor((time % 1000) / 10); // сотые
-
-        return (
-            String(minutes).padStart(2, "0") + ":" +
-            String(seconds).padStart(2, "0") + ":" +
-            String(millis).padStart(2, "0")
-        );
-    }
-
     render() {
         this.#renderer.clear();
         this.#renderer.drawField(this.#field);
         this.#renderer.drawTetromino(this.#field.getTetrominoCells(this.#ghostTetromino), this.#ghostTetromino.colors);
-        this.#renderer.drawNextTetrominoWindow(this.#field, this.#tetrominoBag.viewNext());
+        this.#renderer.drawNextTetrominoWindow(this.#tetrominoBag.viewNext());
         if (this.#isLocking) {
             const pulse = (Math.sin(this.#pulseTime * 0.02) + 1) / 2;
             this.#renderer.saveCtxAndMakeAlpha(0.4 + 0.6 * pulse);
@@ -274,9 +267,10 @@ export default class Game {
         this.#renderer.drawTetromino(this.#field.getTetrominoCells(this.#currentTetromino), this.#currentTetromino.colors);
         this.#renderer.restoreCtx();
         this.#explodingBlocks.forEach(b => this.#renderer.drawExplodingBlock(b));
-        this.#renderer.renderInfoPanel(this.#player.level,
-            this.#player.score,this.getFormattedTime(), this.#player.lines,
-            this.#field.startX - 200, this.#field.startY+ 60);
+        this.#renderer.renderInfoPanel(this.#player.name, this.#player.level,
+            this.#player.score, this.#player.lines);
+        this.#renderer.renderControlsInfo();
+        this.#renderer.renderTopScoresTable(this.#scoreStorage.getScores());
     }
 
     tryRotate(direction = 1) {
@@ -322,7 +316,7 @@ export default class Game {
         const level = this.#player.level;
         this.#dropInterval = nesSpeeds[Math.min(level, nesSpeeds.length - 1)];
         this.#lockDelayWithoutActions = Math.max(this.#endDelayWithoutActions,
-            this.#startDelayWithoutActions - (this.#player.level - 1) * 50);
+            this.#startDelayWithoutActions - (this.#player.level - 1) * 20);
     }
 }
 
