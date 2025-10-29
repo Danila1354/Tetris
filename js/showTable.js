@@ -1,5 +1,4 @@
 import ScoreStorage from "./ScoreStorage.js";
-
 const storage = new ScoreStorage();
 
 
