@@ -5,8 +5,10 @@ export default class Renderer {
     #colors;
     #layout = {};
     #fonts = {};
-    constructor(ctx) {
-        this.#ctx = ctx;
+    #canvas;
+    constructor() {
+        this.#canvas = document.getElementById("canvas");
+        this.#ctx = this.initCanvas();
         this.#colors = {
             glassFill: "rgba(20, 20, 40, 0.9)",
             glassStroke: "rgba(138, 43, 226, 0.8)",
@@ -22,6 +24,18 @@ export default class Renderer {
             scoresTableTitle: "22px Comic Sans MS",
             scoresTableRows: "17px Comic Sans MS"
         };
+    }
+    initCanvas(){
+        const scale = window.devicePixelRatio || 1; // for high-DPI screens
+        this.#canvas.style.width = window.innerWidth + "px";
+        this.#canvas.style.height = window.innerHeight + "px";
+
+        this.#canvas.width = window.innerWidth * scale;
+        this.#canvas.height = window.innerHeight * scale;
+
+        const ctx = this.#canvas.getContext("2d");
+        ctx.scale(scale, scale);
+        return ctx;
     }
     initLayout(field) {
         this.#layout.infoPanel = {
@@ -221,12 +235,17 @@ export default class Renderer {
 
         const shape = Tetromino.SHAPES[nextTetrominoShape];
         const colors = Tetromino.COLORS[nextTetrominoShape];
-
+        // Вычисляем границы фигуры
         const minX = Math.min(...shape.map(([x]) => x));
         const minY = Math.min(...shape.map(([, y]) => y));
         const maxX = Math.max(...shape.map(([x]) => x));
         const maxY = Math.max(...shape.map(([, y]) => y));
 
+        // Вычисляем отступы, чтобы центрировать фигуру в окне
+        // (boxSize / 5) - размер одной клетки в окне
+        // (maxX - minX + 1) и (maxY - minY + 1) - ширина и высота фигуры в клетках
+        // (boxSize - ...) / 2 - оставшееся пространство, делённое пополам для отступа
+        // boxX + ... и boxY + ... - сдвигаем отступы относительно позиции окна
         const offsetX = boxX + (boxSize - (maxX - minX + 1) * (boxSize / 5)) / 2;
         const offsetY = boxY + (boxSize - (maxY - minY + 1) * (boxSize / 5)) / 2;
 
@@ -363,6 +382,11 @@ export default class Renderer {
         finalScore.textContent = `Score: ${player.score}`;
         finalLines.textContent = `Lines: ${player.lines}`;
         overlay.classList.remove("hidden");
+    }
+    triggerShakeY() {
+        this.#canvas.classList.remove("shake-y");
+        void this.#canvas.offsetWidth;
+        this.#canvas.classList.add("shake-y");
     }
 
 }

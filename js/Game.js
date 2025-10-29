@@ -34,8 +34,6 @@ export default class Game {
 
     #explodingBlocks = [];
 
-    #startTime = null;   // когда началась игра
-    #elapsed = 0;      // сколько прошло с начала игры
 
     constructor(field, renderer, player) {
         this.#field = field;
@@ -52,41 +50,39 @@ export default class Game {
 
     start() {
         this.#currentTetromino = new Tetromino(this.#tetrominoBag.getNext());
-        this.setCenterCoords();
+        this.#setCenterCoords();
         this.#lastTime = performance.now();
-        this.#startTime = this.#lastTime;
         this.#isRunning = true;
 
-        this.animationId = requestAnimationFrame((timestamp) => this.gameLoop(timestamp));
+        this.animationId = requestAnimationFrame((timestamp) => this.#gameLoop(timestamp));
     }
 
-    gameLoop(timestamp) {
+    #gameLoop(timestamp) {
         if (!this.#isRunning) return;
 
         const delta = timestamp - this.#lastTime;
         this.#lastTime = timestamp;
-        this.#elapsed = timestamp - this.#startTime;
-        this.update(delta);
-        this.render();
-
-        this.animationId = requestAnimationFrame((ts) => this.gameLoop(ts));
+        this.#update(delta);
+        this.#render();
+        this.animationId = requestAnimationFrame((ts) => this.#gameLoop(ts));
     }
 
-    performAction(action) {
+    #performAction(action) {
         const actions = {
-            left: () => this.tryMove(-1, 0),
-            right: () => this.tryMove(1, 0),
+            left: () => this.#tryMove(-1, 0),
+            right: () => this.#tryMove(1, 0),
             down: () => {
-                const moved = this.tryMove(0, 1);
+                const moved = this.#tryMove(0, 1);
                 if (moved) {
                     this.#player.addScore(1);
                 }
                 return moved;
             },
-            rotateCW: () => this.tryRotate(1),
-            rotateCCW: () => this.tryRotate(-1),
-            drop: () => this.hardDrop()
+            rotateCW: () => this.#tryRotate(1),
+            rotateCCW: () => this.#tryRotate(-1),
+            drop: () => this.#hardDrop()
         };
+
 
         if (actions[action]) {
             actions[action]();
@@ -95,9 +91,7 @@ export default class Game {
         return false;
     }
 
-
-    update(delta) {
-        const now = performance.now();
+    #handleInput(now) {
         const inputs = [
             ["ArrowLeft", "left"],
             ["ArrowRight", "right"],
@@ -106,25 +100,29 @@ export default class Game {
             ["KeyZ", "rotateCCW"],
             ["Space", "drop"],
         ];
-
         for (const [key, action] of inputs) {
             if (this.#input.shouldTrigger(key, now)) {
-                const actionDone = this.performAction(action);
+                const actionDone = this.#performAction(action);
                 if (this.#isLocking && actionDone) {
                     this.#lockDrops += 1;
                     this.#lockTimer = 0;
                 }
             }
         }
-        this.#lastDropTime += delta;
+    }
+
+    #updateGhostTetromino() {
         this.#ghostTetromino.copyFrom(this.#currentTetromino);
-        this.hardDrop(true);
+        this.#hardDrop(true);
+    }
+
+    #updateExplodingBlocks(delta) {
         this.#explodingBlocks.forEach(b => b.update(delta));
         this.#explodingBlocks = this.#explodingBlocks.filter(b => !b.isDone());
+    }
 
+    #handleLocking(delta) {
         const canFall = this.#field.checkNextPosition(this.#currentTetromino, 0, 1);
-
-
         if (!canFall) {
             if (!this.#isLocking) {
                 this.#isLocking = true;
@@ -134,7 +132,7 @@ export default class Game {
             } else {
                 this.#lockTimer += delta;
                 if (this.#lockDrops > this.#maxLockDrops || this.#lockTimer >= this.#lockDelayWithoutActions) {
-                    this.lockCurrentTetromino();
+                    this.#lockCurrentTetromino();
                     this.#isLocking = false;
                     this.#lockTimer = 0;
                     this.#lockDrops = 0;
@@ -149,13 +147,6 @@ export default class Game {
                     this.#lockTimer = 0;
                 }
             }
-
-        }
-        if (this.#lastDropTime >= this.#dropInterval) {
-            if (this.#field.checkNextPosition(this.#currentTetromino, 0, 1)) {
-                this.#currentTetromino.moveDown();
-            }
-            this.#lastDropTime = 0;
         }
         if (this.#isLocking) {
             this.#pulseTime += delta;
@@ -164,7 +155,28 @@ export default class Game {
         }
     }
 
-    setCenterCoords() {
+    #handleAutoDrop(delta) {
+        this.#lastDropTime += delta;
+        if (this.#lastDropTime >= this.#dropInterval) {
+            if (this.#field.checkNextPosition(this.#currentTetromino, 0, 1)) {
+                this.#currentTetromino.moveDown();
+            }
+            this.#lastDropTime = 0;
+        }
+    }
+
+
+    #update(delta) {
+        const now = performance.now();
+        this.#handleInput(now);
+        this.#updateGhostTetromino();
+        this.#updateExplodingBlocks(delta);
+        this.#handleLocking(delta);
+        this.#handleAutoDrop(delta);
+    }
+
+
+    #setCenterCoords() {
         const spawnX = Math.floor((this.#field.cols - this.#currentTetromino.getWidth()) / 2);
         const spawnY = 0;
         this.#currentTetromino.setSpawnCoords(spawnX, spawnY);
@@ -174,7 +186,7 @@ export default class Game {
         }
     }
 
-    tryMove(dx, dy) {
+    #tryMove(dx, dy) {
         const key = `${dx},${dy}`;
         const moveMethods = {
             "0,1": () => this.#currentTetromino.moveDown(),
@@ -191,7 +203,7 @@ export default class Game {
         return false;
     }
 
-    hardDrop(isGhost = false) {
+    #hardDrop(isGhost = false) {
 
         const tetromino = isGhost ? this.#ghostTetromino : this.#currentTetromino;
         let countCells = 0;
@@ -200,8 +212,7 @@ export default class Game {
             countCells++;
         }
         if (!isGhost) {
-            // playHardDrop();
-            this.lockCurrentTetromino();
+            this.#lockCurrentTetromino();
             this.#player.addScore(countCells * 2);
             this.#isLocking = false;
             this.#lockTimer = 0;
@@ -220,7 +231,7 @@ export default class Game {
         this.#renderer.renderGameOver(this.#player);
     }
 
-    lockCurrentTetromino() {
+    #lockCurrentTetromino() {
         this.#field.fixTetromino(this.#currentTetromino);
 
         const fullLines = this.#field.checkFullLines();
@@ -234,33 +245,35 @@ export default class Game {
                 }
             });
             this.#field.removeFullLines(fullLines);
-            this.updatePlayerScore(fullLines.length);
+            this.#updatePlayerScore(fullLines.length);
         }
         if (this.#field.checkGameOver()) {
             this.stopGame();
             return;
         }
-        triggerShakeY();
+        this.#renderer.triggerShakeY();
         this.#currentTetromino = new Tetromino(this.#tetrominoBag.getNext());
-        this.setCenterCoords();
+        this.#setCenterCoords();
     }
 
-    updatePlayerScore(linesCleared) {
-        const lineScores = [0, 100, 300, 500, 800];
+    #updatePlayerScore(linesCleared) {
+        const lineScores = [0, 40, 100, 300, 1200];
         this.#player.addScore(lineScores[linesCleared] * this.#player.level);
 
         const levelUp = this.#player.addLines(linesCleared);
         if (levelUp) {
-            this.setDropInterval();
+            this.#setDropInterval();
         }
     }
 
-    render() {
+    #render() {
         this.#renderer.clear();
         this.#renderer.drawField(this.#field);
         this.#renderer.drawTetromino(this.#field.getTetrominoCells(this.#ghostTetromino), this.#ghostTetromino.colors);
         this.#renderer.drawNextTetrominoWindow(this.#tetrominoBag.viewNext());
         if (this.#isLocking) {
+            // Math.sin(...) колеблется от -1 до +1, поэтому (sin + 1) / 2 → диапазон [0, 1].
+            // Это значение используется для плавного изменения прозрачности (альфы) от 0.4 до 1.0.
             const pulse = (Math.sin(this.#pulseTime * 0.02) + 1) / 2;
             this.#renderer.saveCtxAndMakeAlpha(0.4 + 0.6 * pulse);
         }
@@ -273,7 +286,7 @@ export default class Game {
         this.#renderer.renderTopScoresTable(this.#scoreStorage.getScores());
     }
 
-    tryRotate(direction = 1) {
+    #tryRotate(direction = 1) {
         const oldCoords = this.#currentTetromino.coords.map(([x, y]) => [x, y]);
         const oldBase = this.#currentTetromino.baseCoords.map(([x, y]) => [x, y]);
         const oldOrientation = this.#currentTetromino.orientation;
@@ -308,21 +321,15 @@ export default class Game {
         return false;
     }
 
-    setDropInterval() {
+    #setDropInterval() {
         const nesSpeeds = [
             800, 717, 633, 550, 467, 383, 300, 217, 133, 100,
             83, 83, 83, 67, 67, 67, 50, 50, 50, 33
         ];
-        const level = this.#player.level;
+        const level = this.#player.level - 1;
         this.#dropInterval = nesSpeeds[Math.min(level, nesSpeeds.length - 1)];
         this.#lockDelayWithoutActions = Math.max(this.#endDelayWithoutActions,
             this.#startDelayWithoutActions - (this.#player.level - 1) * 20);
     }
 }
 
-function triggerShakeY() {
-    const canvas = document.querySelector("canvas");
-    canvas.classList.remove("shake-y");
-    void canvas.offsetWidth;
-    canvas.classList.add("shake-y");
-}

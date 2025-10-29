@@ -35,12 +35,6 @@ export default class GameField {
         return this.#cells[y][x];
     }
 
-    getCellByCoords(worldX, worldY) {
-        const x = Math.floor((worldX - this.#startX) / this.#cellSize);
-        const y = Math.floor((worldY - this.#startY) / this.#cellSize);
-        return this.getCellByIndex(x, y);
-    }
-
     getRealCoors(x, y) {
         if (y < 0 || y >= this.#rows || x < 0 || x >= this.#cols) {
             throw new RangeError(`Cell coordinates out of bounds: (${x}, ${y})`);
@@ -172,6 +166,7 @@ export default class GameField {
     get yWithoutTwoRows() {
         return this.#yWithoutTwoRows;
     }
+    
     getCellColor(x, y) {
         const cell = this.getCellByIndex(x, y);
         if (cell.isOccupied && cell.style && cell.style.type === 'gradient') {
@@ -180,12 +175,6 @@ export default class GameField {
     }
 
     getTetrominoCells(tetromino) {
-        const result = [];
-        for (let [x, y] of tetromino.coords) {
-            const [worldX, worldY] = this.getRealCoors(x, y);
-            const cell = this.getCellByCoords(worldX, worldY);
-            result.push(cell);
-        }
-        return result;
+        return tetromino.coords.map(([x, y]) => this.getCellByIndex(x, y));
     }
 }

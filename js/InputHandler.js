@@ -5,7 +5,6 @@ export default class InputHandler {
         this.repeatDelay = 200;
         this.repeatRate = 50;
 
-        // сюда добавляем Escape, чтобы пауза срабатывала один раз
         this.noRepeatKeys = ["ArrowUp", "Space", "KeyZ"];
 
         window.addEventListener("keydown", (e) => {
